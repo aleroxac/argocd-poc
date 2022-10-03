@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma
+  namespace: default
+  labels:
+    app: kuma
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kuma
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 50%
+    type: RollingUpdate
+  template:
+    metadata:
+      name: kuma-deploy
+      namespace: default
+      labels:
+        app: kuma
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: kuma
+          image: louislam/uptime-kuma:1.11.1-alpine
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+              name: http
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command: ["node", "extra/healthcheck.js"]
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3001
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 50m
+              memory: 128Mi
